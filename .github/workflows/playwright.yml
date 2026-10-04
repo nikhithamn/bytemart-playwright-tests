@@ -27,6 +27,8 @@ jobs:
         docker compose up -d --build
         echo "Waiting for ByteMart frontend & backend services to be healthy..."
         timeout 60s bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 2; done' || true
+        echo "Seeding ByteMart database with test accounts..."
+        docker exec qa-backend-api npm run db:seed || docker exec qa-backend-api npx prisma db seed || true
         echo "ByteMart SUT is ready!"
 
     - uses: actions/setup-node@v4
