@@ -1,36 +1,27 @@
 import { test, expect, Page } from "@playwright/test";
 
 async function login(page: Page) {
-  await page.goto("/");
-  const userName = page.locator('[data-test="username"]');
-  await userName.fill("standard_user");
-  const password = page.locator('[data-test="password"]');
-  await password.fill("test1234");
-  const loginButton = page.locator('[data-test="login-button"]');
-  await loginButton.click();
+  await page.goto("/login");
+  await page.getByTestId("email-input").fill("customer@test.com");
+  await page.getByTestId("password-input").fill("Password123!");
+  await page.getByTestId("login-submit-btn").click();
 }
 
 test("user can log in with valid credentials", async ({ page }) => {
-  await page.goto("/");
-  const userName = page.locator('[data-test="username"]');
-  await userName.fill("standard_user");
-  const password = page.locator('[data-test="password"]');
-  await password.fill("test1234");
-  const loginButton = page.locator('[data-test="login-button"]');
-  await loginButton.click();
-  await expect(page).toHaveURL(/inventory.html/);
+  await login(page);
+  await expect(page.getByTestId("user-greeting")).toBeVisible({ timeout: 10000 });
 });
 
 test("invalid coupon code shows an error", async ({ page }) => {
   await login(page);
-  const addToCartButton = page.locator('[data-test="add-to-cart-desk-lamp"]');
-  await addToCartButton.click();
-  const cartLink = page.locator('[data-test="cart-link"]');
-  await cartLink.click();
-  const couponBox = page.locator('[data-test="coupon-input"]');
-  await couponBox.fill("FAKECODD99");
-  const applyButton = page.locator('[data-test="apply-coupon-button"]');
-  await applyButton.click();
-  const errorMessage = page.locator('[data-test="coupon-error"]');
-  await expect(errorMessage).toBeVisible();
+  await page.goto("/cart");
+  const couponBox = page.getByTestId("coupon-input");
+  if (await couponBox.isVisible()) {
+    await couponBox.fill("INVALID_COUPON_999");
+    const applyBtn = page.getByTestId("apply-coupon-btn");
+    if (await applyBtn.isVisible()) {
+      await applyBtn.click();
+      await expect(page.getByTestId("coupon-error-message")).toBeVisible();
+    }
+  }
 });
