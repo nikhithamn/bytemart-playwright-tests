@@ -1,24 +1,47 @@
 name: Playwright Tests
+
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Test Repository
+      uses: actions/checkout@v4
+
+    - name: Checkout ByteMart App SUT
+      uses: actions/checkout@v4
+      with:
+        repository: nikhithamn/bytemart-app
+        path: sut-app
+
+    - name: Start ByteMart SUT Application Services
+      run: |
+        cd sut-app
+        docker compose up -d --build
+        echo "Waiting for ByteMart frontend & backend services to be healthy..."
+        timeout 60s bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 2; done' || true
+        echo "ByteMart SUT is ready!"
+
     - uses: actions/setup-node@v4
       with:
-        node-version: lts/*
+        node-version: 20
+
     - name: Install dependencies
       run: npm ci
+
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+
     - name: Run Playwright tests
       run: npx playwright test
+
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
